@@ -1,26 +1,27 @@
 import { DependencyConfiguration } from "./contracts";
+import { runDependencyConfiguration } from "./runDependencyConfiguration";
 
 export const bootstrapDependencyConfiguration: DependencyConfiguration = {
-    name: 'bootstrap-application',
+    name: 'a',
     tasks: [
         {
-            name: 'get-application-version',
+            name: 'b',
             dependsOn: [],
             tasks: []
         },
         {
-            name: 'get-feature-toggles',
+            name: 'c',
             dependsOn: [],
+            tasks: [runDependencyConfiguration]
+        },
+        {
+            name: 'd',
+            dependsOn: ['e', 'f'],
             tasks: []
         },
         {
-            name: 'get-application-config',
-            dependsOn: ['get-feature-toggles'],
-            tasks: []
-        },
-        {
-            name: 'start-authentication',
-            dependsOn: ['get-application-config'],
+            name: 'f',
+            dependsOn: ['g'],
             tasks: []
         },
     ],
