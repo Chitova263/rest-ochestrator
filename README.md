@@ -28,6 +28,7 @@ const configuration = {
         {
             name: 'b',
             dependsOn: [],
+            tasks: []
         },
         {
             name: 'c',
@@ -36,18 +37,22 @@ const configuration = {
         {
             name: 'd',
             dependsOn: ['e', 'f'],
+            tasks: []
         },
         {
             name: 'f',
             dependsOn: ['g'],
+            tasks: []
         },
         {
             name: 'e',
             dependsOn: [],
+            tasks: []
         },
         {
             name: 'g',
             dependsOn: [],
+            tasks: []
         },
     ],
 };
