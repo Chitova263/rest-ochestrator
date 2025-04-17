@@ -12,7 +12,7 @@ In modern applications, especially during startup, it's often necessary to perfo
 
 Manually managing these relationships quickly becomes complex and unmaintainable.
 
-## ✅ Proposed Solution
+## ✅ Proposed Solution (First Iteration)
 
 This project provides a simple, declarative way to define and manage API call dependencies using a **DAG (Directed Acyclic Graph)**. Each task (API call) declares which other tasks it depends on, and the orchestrator runs them in the correct order at startup—maximizing parallelism when possible and respecting dependency rules.
 
