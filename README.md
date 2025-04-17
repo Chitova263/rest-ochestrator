@@ -4,13 +4,13 @@ A lightweight orchestrator to manage and execute dependent API calls on applicat
 
 ## 📌 Problem
 
-In modern applications, especially during startup, it's often necessary to perform multiple API calls across various services. These calls may have dependencies between them:
+In modern applications frontend application, especially during startup, it's often necessary to perform multiple API calls across various services/microservices. These calls may have dependencies between them:
 
 > Example:  
 > - **Service B** must wait for **Service A** to complete.  
 > - **Service C** can be called independently of both **A** and **B**.
 
-Manually managing these relationships quickly becomes complex and unmaintainable.
+Manually handling these dependencies and errors using [Promise chaining](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises) or [RxJS](https://rxjs.dev/guide/operators) based solutions can quickly become complicated and difficult to maintain.
 
 ## ✅ Proposed Solution (First Iteration)
 
