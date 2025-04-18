@@ -1,7 +1,7 @@
-import { DependencyConfiguration } from "./contracts";
+import { TaskConfiguration } from "./contracts";
 import { runDependencyConfiguration } from "./runDependencyConfiguration";
 
-export const bootstrapDependencyConfiguration: DependencyConfiguration = {
+export const bootstrapDependencyConfiguration: TaskConfiguration = {
     name: 'a',
     tasks: [
         {

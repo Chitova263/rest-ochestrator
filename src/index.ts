@@ -1,10 +1,28 @@
-import {DependencyConfiguration, Task, taskTypeGuard} from "./contracts";
+import {TaskConfiguration} from "./contracts";
 import fs from 'node:fs';
 import path from 'node:path';
 import {parse} from '@babel/parser';
 import traverse from '@babel/traverse';
 import t from '@babel/types';
-import {ErrorUtil} from "./error.util";
+import {getFlattenedRunnableTasks, getRunnableTaskConfiguration} from "./scheduler/scheduler";
+import {z} from "zod";
+
+export const TaskSchema = z.enum([
+    'a',
+    'b',
+    'c',
+    'd',
+    'e',
+    'f',
+    'g',
+    'h',
+    'i',
+    'j',
+    'k'
+])
+
+export type Task = z.infer<typeof TaskSchema>
+
 
 const filePath: string = path.join(__dirname, 'bootstrapDependencyConfiguration.ts');
 const configuration = buildDependencyGraph(filePath, null);
@@ -12,13 +30,19 @@ console.log(JSON.stringify(configuration, null, 5))
 
 if(configuration) {
     const list: Map<Task, Task[]> = buildAdjacencyList(configuration,  new Map<Task, Task[]>());
-    console.log(list.entries());
+    //console.log(list.entries());
+    let runnableTasks = getRunnableTaskConfiguration(configuration)
+    console.log(runnableTasks)
+    let flattenTasks1 = getFlattenedRunnableTasks(runnableTasks);
+    console.log(flattenTasks1.entries())
 }
+
+
 
 function buildDependencyGraph(
     pathToFile: string,
-    configuration: DependencyConfiguration | null
-): DependencyConfiguration | null {
+    configuration: TaskConfiguration<Task> | null
+): TaskConfiguration<Task> | null {
     const sourceCode: string = fs.readFileSync(pathToFile, { encoding: "utf-8" });
     const ast = parse(sourceCode, {
         sourceType: "module",
@@ -63,8 +87,8 @@ function buildDependencyGraph(
 function getDependencyConfigurationFromObjectProperties(
     objectProperties: t.ObjectProperty[],
     fileImportsMapping: Map<string, string>,
-    configuration: DependencyConfiguration | null
-): DependencyConfiguration {
+    configuration: TaskConfiguration<Task> | null
+): TaskConfiguration<Task> {
     const nameObjectProperty: t.ObjectProperty | undefined = objectProperties
         .find((property: t.ObjectProperty): boolean => property.key.type === 'Identifier' && property.key.name === "name");
     const tasksObjectProperty: t.ObjectProperty | undefined = objectProperties
@@ -92,8 +116,8 @@ function getDependencyConfigurationFromObjectProperties(
 function getTasksPropertyValue(
     tasksObjectProperty: t.ObjectProperty,
     fileImportsMapping: Map<string, string>,
-    configuration: DependencyConfiguration | null
-): DependencyConfiguration[]  {
+    configuration: TaskConfiguration<Task> | null
+): TaskConfiguration<Task>[]  {
     if(tasksObjectProperty.value.type !== 'ArrayExpression'){
         throw new Error('tasksObjectProperty.value.type must be ArrayExpression');
     }
@@ -121,7 +145,7 @@ function getNamePropertyValue(nameObjectProperty: t.ObjectProperty): Task {
     if(nameObjectProperty.value.type !== 'StringLiteral'){
         throw new Error('nameObjectProperty.value.type must be StringLiteral');
     }
-    return taskTypeGuard.parse(nameObjectProperty.value.value) ;
+    return TaskSchema.parse(nameObjectProperty.value.value) ;
 }
 
 function getDependsOnPropertyValue(dependsOnObjectProperty: t.ObjectProperty): Task[] {
@@ -130,11 +154,11 @@ function getDependsOnPropertyValue(dependsOnObjectProperty: t.ObjectProperty): T
     }
     return dependsOnObjectProperty.value.elements
         .filter((element: t.SpreadElement | t.Expression | null): element is t.StringLiteral => element?.type === 'StringLiteral')
-        .map((element: t.StringLiteral): Task => taskTypeGuard.parse(element.value));
+        .map((element: t.StringLiteral): Task => TaskSchema.parse(element.value));
 }
 
 
-function buildAdjacencyList(dependencyConfiguration: DependencyConfiguration, adjacencyListRepresentation: Map<Task, Task[]>):  Map<Task, Task[]> {
+function buildAdjacencyList(dependencyConfiguration: TaskConfiguration<Task>, adjacencyListRepresentation: Map<Task, Task[]>):  Map<Task, Task[]> {
     const task: Task = dependencyConfiguration.name;
     const dependsOn: Task[] = dependencyConfiguration.dependsOn;
     if (!adjacencyListRepresentation.has(task)) {

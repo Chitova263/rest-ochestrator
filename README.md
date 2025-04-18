@@ -1,6 +1,8 @@
-# 🕸️ DAG-Based API Call Orchestrator
+# 🕸️ Orchestra
 
-A lightweight orchestrator to manage and execute dependent API calls on application startup using a **Directed Acyclic Graph (DAG)**.
+Orchestrator to manage and execute asynchronous tasks (e.g. API calls) using a queuing system and a [**Directed Acyclic Graph (DAG)**](https://en.wikipedia.org/wiki/Directed_acyclic_graph). Tasks are processed based on their declared dependencies, allowing for parallel execution where possible and ordered execution where required.
+
+
 
 ## 📌 Problem
 

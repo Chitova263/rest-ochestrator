@@ -1,27 +1,14 @@
-import {z} from "zod";
-
-export interface DependencyConfiguration {
+export interface TaskConfiguration<Task extends string> {
     name: Task;
-    tasks: DependencyConfiguration[];
-    dependsOn: Task[]
+    tasks: TaskConfiguration<Task>[];
+    dependsOn: Task[];
 }
 
-export const taskTypeGuard = z.enum([
-    'a',
-    'b',
-    'c',
-    'd',
-    'e',
-    'f',
-    'g',
-    'h',
-    'i',
-    'j',
-    'k'
-])
-
-export type Task = z.infer<typeof taskTypeGuard>
-
-export interface GraphNode {
-
+export interface RunnableTaskConfiguration<Task extends string> {
+    name: Task;
+    tasks: RunnableTaskConfiguration<Task>[];
+    dependsOn: Task[];
+    status: 'Pending' | 'Running' | "Success" | 'Failure' | 'Skipped';
+    startTime: number | null;
+    endTime: number | null;
 }
