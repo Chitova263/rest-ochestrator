@@ -1,6 +1,7 @@
 import { TaskConfiguration } from "./contracts";
+import {Task} from "./index";
 
-export const runDependencyConfiguration: TaskConfiguration = {
+export const runDependencyConfiguration: TaskConfiguration<Task> = {
     name: 'i',
     tasks: [
         {
