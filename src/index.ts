@@ -1,52 +1,25 @@
-import {TaskConfiguration} from "./contracts";
-import {z} from "zod";
-import {InMemoryStateManager} from "./state-manager/in-memory/inMemoryStateManager";
-import {Scheduler} from "./scheduler/scheduler";
-
-export const TaskSchema = z.enum([
-    'a',
-    'b',
-    'c',
-    'd',
-    'e',
-    'f',
-    'g',
-    'h',
-    'i',
-    'j',
-    'k'
-])
-
-export type Task = z.infer<typeof TaskSchema>
-
-
-// const filePath: string = path.join(__dirname, 'bootstrapDependencyConfiguration.ts');
-// const configuration = buildDependencyGraph(filePath, null);
-// console.log(JSON.stringify(configuration, null, 5))
-
-// if(configuration) {
-//     const list: Map<Task, Task[]> = buildAdjacencyList(configuration,  new Map<Task, Task[]>());
-//
-//
-// }
+import { TaskConfiguration } from './core/contracts';
+import { Scheduler } from './scheduler/scheduler';
+import { StateManager } from './state-management/state-manager';
+import { reduxToolKitStoreAdapter } from './state-management/redux-toolkit/redux-toolkit-store';
 
 const config: TaskConfiguration<string> = {
-    name: "main",
-    dependsOn: [],
-    tasks: [
-        { name: "init", dependsOn: ["main"], tasks: [] },
-        { name: "load", dependsOn: ["init"], tasks: [] },
-        { name: "report", dependsOn: ["load"], tasks: [] },
+    name: 'main',
+    steps: [
+        { name: 'init', dependsOn: ['main'] },
+        { name: 'load', dependsOn: ['init'] },
+        { name: 'report', dependsOn: ['load'] },
     ],
+    dependsOn: [],
 };
 
-const manager = new InMemoryStateManager();
-manager.enqueueTaskConfiguration(config);
-const scheduler = new Scheduler(manager);
+const scheduler = new Scheduler();
+const manager = new StateManager(reduxToolKitStoreAdapter, scheduler);
 
-scheduler.on('onStart', ({ name }): void => {
-    console.log("onStart", name);
-})
+scheduler.on('start', ({ name }): void => {
+    console.log(`started ${name}`);
+    // Do some asynchronous work and dispatch a success event when completed
+    scheduler.emit('success', name);
+});
 
-scheduler.start();
-
+manager.enqueue(config);
