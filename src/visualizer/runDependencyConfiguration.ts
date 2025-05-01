@@ -1,18 +1,18 @@
-import { TaskConfiguration } from "./contracts";
-import {Task} from "./index";
+import { Task } from '../state-management/contracts';
+import {Tasks} from "./visualizer";
 
-export const runDependencyConfiguration: TaskConfiguration<Task> = {
+export const runDependencyConfiguration: Task<Tasks> = {
     name: 'i',
     tasks: [
         {
             name: 'j',
             dependsOn: ['k'],
-            tasks: []
+            tasks: [],
         },
         {
             name: 'k',
             dependsOn: [],
-            tasks: []
+            tasks: [],
         },
     ],
     dependsOn: [],

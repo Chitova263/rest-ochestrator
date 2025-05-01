@@ -1,52 +1,37 @@
-import {TaskConfiguration} from "./contracts";
-import {z} from "zod";
-import {InMemoryStateManager} from "./state-manager/in-memory/inMemoryStateManager";
-import {Scheduler} from "./scheduler/scheduler";
-
-export const TaskSchema = z.enum([
-    'a',
-    'b',
-    'c',
-    'd',
-    'e',
-    'f',
-    'g',
-    'h',
-    'i',
-    'j',
-    'k'
-])
-
-export type Task = z.infer<typeof TaskSchema>
+import { ExecutableTask, Task } from './state-management/contracts';
+import { z } from 'zod';
+import { InMemoryStateManager } from './state-management/in-memory/inMemoryStateManager';
+import { Scheduler } from './scheduler/scheduler';
 
 
-// const filePath: string = path.join(__dirname, 'bootstrapDependencyConfiguration.ts');
-// const configuration = buildDependencyGraph(filePath, null);
-// console.log(JSON.stringify(configuration, null, 5))
 
-// if(configuration) {
-//     const list: Map<Task, Task[]> = buildAdjacencyList(configuration,  new Map<Task, Task[]>());
-//
-//
-// }
-
-const config: TaskConfiguration<string> = {
-    name: "main",
+const config: Task<string> = {
+    name: 'main',
     dependsOn: [],
     tasks: [
-        { name: "init", dependsOn: ["main"], tasks: [] },
-        { name: "load", dependsOn: ["init"], tasks: [] },
-        { name: "report", dependsOn: ["load"], tasks: [] },
+        { name: 'init', dependsOn: ['main'], tasks: [] },
+        { name: 'load', dependsOn: ['init'], tasks: [] },
+        { name: 'report', dependsOn: ['load'], tasks: [] },
     ],
 };
 
-const manager = new InMemoryStateManager();
-manager.enqueueTaskConfiguration(config);
-const scheduler = new Scheduler(manager);
+const scheduler = new Scheduler();
+const manager = new InMemoryStateManager(scheduler);
 
-scheduler.on('onStart', ({ name }): void => {
-    console.log("onStart", name);
-})
+scheduler.on('start', ({ name }): void => {
+    console.log(`started ${name}`);
+    // Do some work and emit success after complete
+    scheduler.emit('success', name);
+});
 
-scheduler.start();
+scheduler.on('success', ({ name }): void => {
+    // Do something on success example logging
+    console.log(`success ${name}`);
+});
 
+scheduler.on('failure', ({ name }): void => {
+    // Do something on failure example logging
+    console.log(`failure ${name}`);
+});
+
+manager.enqueue(config);
