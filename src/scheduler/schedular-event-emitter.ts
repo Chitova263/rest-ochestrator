@@ -1,8 +1,7 @@
-import {RunnableStatus} from "../contracts";
-
-export interface SchedularEvent<Task extends string> {
-    onStart: { name: Task };
-    onComplete: { name: Task };
+export interface SchedularEvent<T extends string> {
+    start: { name: T };
+    success: { name: T };
+    failure: { name: T };
 }
 
 export class SchedulerEventEmitter<Events extends Record<string, any>> {
@@ -18,7 +17,7 @@ export class SchedulerEventEmitter<Events extends Record<string, any>> {
     }
 
     public off<K extends keyof Events>(event: K, listener: (payload: Events[K]) => void): void {
-        this.listeners[event] = (this.listeners[event] || []).filter(l => l !== listener);
+        this.listeners[event] = (this.listeners[event] || []).filter((l) => l !== listener);
     }
 
     public emit<K extends keyof Events>(event: K, payload: Events[K]): void {
