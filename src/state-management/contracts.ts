@@ -1,25 +1,23 @@
-import { TaskConfiguration } from '../core/contracts';
+export type Status = 'PENDING' | 'READY' | 'SUCCESS' | 'FAILURE';
 
-export type TaskStatus = 'PENDING' | 'READY' | 'SUCCESS' | 'FAILURE';
+export type TaskType = 'CONFIGURATION' | 'EXECUTABLE';
 
-export type TaskKind = 'CONFIGURATION' | 'EXECUTABLE';
-
-export interface Task<T extends string> {
-    identifier: string;
-    name: T;
-    tasks: Task<T>[];
-    runAfter: T[];
-    status: TaskStatus;
-    startedTime: number | null;
+export interface Task<TName extends string> {
+    id: string;
+    name: TName;
+    tasks: Task<TName>[];
+    runAfter: TName[];
+    status: Status;
+    startTime: number | null;
     endTime: number | null;
-    kind: TaskKind;
+    type: TaskType;
 }
 
-export interface StateManager<T extends string> {
-    enqueue(config: TaskConfiguration<T>): void;
+export interface TaskStore<TName extends string> {
+    getState(): TaskStoreState<TName>;
+    setQueue(queue: Task<TName>[]): void;
 }
 
-export interface TaskStore<T extends string> {
-    getState(): Task<T>[];
-    setState(tasks: Task<T>[]): void;
+export interface TaskStoreState<TName extends string> {
+    queue: Task<TName>[];
 }

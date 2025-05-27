@@ -1,46 +1,43 @@
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Task, TaskStore } from '../contracts';
+import { Status, Task, TaskStore, TaskStoreState } from '../contracts';
 
-class ReduxToolkitTaskStoreAdapter<T extends string> implements TaskStore<T> {
-    constructor(
-        private readonly getStateFn: () => RootState,
-        private readonly dispatch: AppDispatch
+export class ReduxToolkitTaskStoreAdapter<TName extends string> implements TaskStore<TName> {
+    public constructor(
+        private readonly store: StoreType,
+        private readonly slice: StoreSliceType
     ) {}
 
-    public getState(): Task<T>[] {
-        return this.getStateFn().orchestrator.queue;
+    public getState(): TaskStoreState<TName> {
+        return structuredClone(this.store.getState()['orchestrator']) as TaskStoreState<TName>;
     }
 
-    public setState(tasks: Task<T>[]): void {
-        this.dispatch({ type: 'enqueue tasks', payload: tasks });
+    public setQueue(queue: Task<TName>[]): void {
+        this.store.dispatch(this.slice.actions.queue({ queue }));
     }
 }
 
-export interface State<T extends string> {
-    queue: Task<T>[];
-}
-
-function getStoreSlice<T extends string>() {
+export function createStoreSlice<TName extends string>(initialState: TaskStoreState<TName>) {
     return createSlice({
         name: 'queue',
-        initialState: {
-            queue: [],
-        },
+        initialState,
         reducers: {
-            queue: (state, action: PayloadAction<{ tasks: Task<T>[] }>) => {
-                console.log(state, action);
+            queue: (state, action: PayloadAction<{ queue: Task<TName>[] }>) => {
+                return {
+                    ...state,
+                    queue: action.payload.queue,
+                };
             },
         },
     });
 }
 
-export const store = configureStore({
-    reducer: {
-        orchestrator: getStoreSlice().reducer,
-    },
-});
+export function createStore(slice: StoreSliceType, name: string) {
+    return configureStore({
+        reducer: {
+            [name]: slice.reducer,
+        },
+    });
+}
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
-
-export const reduxToolKitStoreAdapter = new ReduxToolkitTaskStoreAdapter(store.getState, store.dispatch);
+export type StoreSliceType = ReturnType<typeof createStoreSlice>;
+export type StoreType = ReturnType<typeof createStore>;
