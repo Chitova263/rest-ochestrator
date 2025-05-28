@@ -1,25 +1,29 @@
 import { TaskConfiguration } from '../core/contracts';
-import { randomUUID } from 'node:crypto';
-import { Scheduler } from '../scheduler/scheduler';
-import { Status, Task, TaskStore } from './contracts';
+import { AbstractTaskStore, Status, Task } from '../state-management/contracts';
+import { v4 as uuid } from 'uuid';
 
-export class StateManager<TName extends string> {
-    constructor(
-        private readonly store: TaskStore<TName>,
-        private readonly scheduler: Scheduler<TName>
-    ) {
+export class Orchestrator<TName extends string> {
+    constructor(private readonly store: AbstractTaskStore<TName>) {
         this.initSchedular();
     }
 
     public enqueue(configuration: TaskConfiguration<TName>): void {
-        //Find tasks that are in PENDING state but are now READY and update queue state
-        const tasks: Task<TName>[] = [...this.store.getState().queue, this.mapConfigurationToTask(configuration)];
-        const updatedTasks: Task<TName>[] = this.setPendingIndependentTasksToReadyState(tasks);
-        this.store.setQueue(updatedTasks);
-        this.startScheduler();
+        this.store.enqueue(configuration);
+        const newTask: Task<TName> = this.mapConfigurationToTask(configuration);
+        const updatedQueue: Task<TName>[] = [...this.getCurrentQueue(), newTask];
+        this.updatePendingIndependentQueuedTasksToReadyState(updatedQueue);
+        this.handleQueue();
     }
 
-    private setPendingIndependentTasksToReadyState(tasks: Task<TName>[]): Task<TName>[] {
+    public complete(name: TName, status: Status): void {
+        this.store.complete(name, status);
+    }
+
+    private getCurrentQueue(): Task<TName>[] {
+        return this.store.getState().queue;
+    }
+
+    private updatePendingIndependentQueuedTasksToReadyState(tasks: Task<TName>[]): Task<TName>[] {
         /*
          * A task is ready if any of the conditions are met
          * 1. If it has an empty runAfter array
@@ -28,6 +32,7 @@ export class StateManager<TName extends string> {
         const taskMap = new Map<TName, Task<TName>>();
         this.collectAllTasks(tasks, taskMap);
         this.updateTaskStatuses(tasks, taskMap);
+        this.store.setQueue(tasks);
         return tasks;
     }
 
@@ -44,8 +49,8 @@ export class StateManager<TName extends string> {
         for (const task of taskList) {
             if (task.status === 'PENDING') {
                 const isReady =
-                    task.runAfter.length === 0 ||
-                    task.runAfter.every((depName) => {
+                    task.waitFor.length === 0 ||
+                    task.waitFor.every((depName) => {
                         const dep = taskMap.get(depName);
                         return dep && (dep.status === 'SUCCESS' || dep.status === 'FAILURE');
                     });
@@ -61,23 +66,24 @@ export class StateManager<TName extends string> {
         }
     }
 
-    private startScheduler(): void {
-        this.store.setQueue(this.setPendingIndependentTasksToReadyState(this.store.getState().queue));
-        const cloned: Task<TName>[] = structuredClone(this.store.getState().queue);
-        const flattenedTasks: Task<TName>[] = this.flattenTasks(cloned);
-        const readyTasks: Task<TName>[] = flattenedTasks.filter((task: Task<TName>): boolean => task.status === 'READY');
-        // Dispatch all the ready tasks in parallel
+    private handleQueue(): void {
+        this.updatePendingIndependentQueuedTasksToReadyState(this.getCurrentQueue());
+        const readyTasks: Task<TName>[] = this.getFlattenTasks(this.getCurrentQueue()).filter(
+            (task: Task<TName>): boolean => task.status === 'READY'
+        );
+
         for (const task of readyTasks) {
-            this.scheduler.emit('start', task.name);
+            // Mark the task as starting here
+            this.store.start(task.name);
         }
     }
 
-    private flattenTasks(tasks: Task<TName>[]): Task<TName>[] {
+    private getFlattenTasks(tasks: Task<TName>[]): Task<TName>[] {
         const flattenedTasks: Task<TName>[] = [];
         for (const task of tasks) {
             flattenedTasks.push(task);
             if (task.type === 'CONFIGURATION') {
-                flattenedTasks.push(...this.flattenTasks(task.tasks));
+                flattenedTasks.push(...this.getFlattenTasks(task.tasks));
             }
         }
         return flattenedTasks;
@@ -85,12 +91,12 @@ export class StateManager<TName extends string> {
 
     private mapConfigurationToTask(configuration: TaskConfiguration<TName>): Task<TName> {
         return {
-            id: randomUUID(),
+            id: uuid(),
             name: configuration.name,
             status: 'PENDING',
             startTime: null,
             endTime: null,
-            runAfter: configuration.dependsOn,
+            waitFor: configuration.dependsOn,
             type: 'steps' in configuration ? 'CONFIGURATION' : 'EXECUTABLE',
             tasks: this.getTasks(configuration),
         };
@@ -114,16 +120,16 @@ export class StateManager<TName extends string> {
     }
 
     private initSchedular(): void {
-        this.scheduler.on('success', ({ name }): void => {
-            const updatedQueue: Task<TName>[] = this.completeTasks(name, this.store.getState().queue, 'SUCCESS');
-            this.store.setQueue(updatedQueue);
-            this.startScheduler();
-        });
-
-        this.scheduler.on('failure', ({ name }): void => {
-            const updatedQueue: Task<TName>[] = this.completeTasks(name, this.store.getState().queue, 'SUCCESS');
-            this.store.setQueue(updatedQueue);
-            this.startScheduler();
-        });
+        // this.schedular.on('success', ({ name }): void => {
+        //     const updatedQueue: Task<TName>[] = this.completeTasks(name, this.store.getState().queue, 'SUCCESS');
+        //     this.store.completeTask(name, 'SUCCESS', updatedQueue);
+        //     this.handleQueue();
+        // });
+        //
+        // this.schedular.on('failure', ({ name }): void => {
+        //     const updatedQueue: Task<TName>[] = this.completeTasks(name, this.store.getState().queue, 'SUCCESS');
+        //     this.store.setQueue(updatedQueue);
+        //     this.handleQueue();
+        // });
     }
 }
